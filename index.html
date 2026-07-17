@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Us-Eats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="splash-screen" class="splash-screen">
+      <div class="splash-logo">
+        <i class="fa-solid fa-motorcycle"></i>
+        <span>Us-Eats</span>
+      </div>
+      <div class="spinner" aria-label="Loading"></div>
+    </div>
+
+    <div class="app-shell">
+      <section id="home-screen" class="screen active" aria-hidden="false">
+        <header class="top-bar">
+          <div class="user-pill">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="delivery-text">
+            <span class="label">Delivering to</span>
+            <strong>The Birthday Girl 📍</strong>
+          </div>
+          <button id="cart-toggle" class="cart-button" aria-label="Open cart">
+            <i class="fa-solid fa-shopping-bag"></i>
+            <span id="cart-count" class="cart-badge">0</span>
+          </button>
+        </header>
+
+        <div class="hero-banner">
+          <h1>Us-Eats: Premium Sentimental Delivery.</h1>
+          <p>Current Wait Time: 0 Mins.</p>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="Delivery modes">
+          <button class="tab active" data-mode="instant">⚡ Instant Delivery</button>
+          <button class="tab" data-mode="preorder">✈️ Reunion Pre-Orders</button>
+        </div>
+
+        <div class="menu-list">
+          <article class="menu-card" data-category="instant">
+            <div class="card-icon"><i class="fa-solid fa-lock"></i></div>
+            <div class="card-content">
+              <h3>The Cairo Vault Unlock</h3>
+              <p>One highly classified, unreleased photo from last month's trip, accompanied by a detailed account of exactly what I was thinking the moment it was taken.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="instant">
+            <div class="card-icon"><i class="fa-solid fa-microphone"></i></div>
+            <div class="card-content">
+              <h3>The Juba Audio Dispatch (60s Raw Feed)</h3>
+              <p>A completely unscripted, one-minute audio recording live from Juba. Expect raw thoughts, zero editing, and immediate delivery.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="instant">
+            <div class="card-icon"><i class="fa-solid fa-briefcase"></i></div>
+            <div class="card-content">
+              <h3>The Executive Decision</h3>
+              <p>Decision fatigue? Upload two outfit or dinner options. The CFO will return a definitive choice with a detailed corporate analysis explaining the logic.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="instant">
+            <div class="card-icon"><i class="fa-solid fa-comments"></i></div>
+            <div class="card-content">
+              <h3>The Partner's Privilege Vent Session</h3>
+              <p>A 10-minute secured line. You vent, I listen. Zero unsolicited advice, and absolutely zero trade or commodity logistical talk. 100% validation guaranteed.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="instant">
+            <div class="card-icon"><i class="fa-solid fa-hands-clapping"></i></div>
+            <div class="card-content">
+              <h3>The Hyperlocal Hype Man</h3>
+              <p>A customized, 30-second aggressively supportive video dispatch to pump you up before your next big event or stressful meeting.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="preorder">
+            <div class="card-icon"><i class="fa-solid fa-utensils"></i></div>
+            <div class="card-content">
+              <h3>The Arrival Banquet</h3>
+              <p>One fully home-cooked meal within 48 hours of closing the distance. Menu dictated entirely by the user. Chef (me) handles prep and cleanup.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="preorder">
+            <div class="card-icon"><i class="fa-solid fa-couch"></i></div>
+            <div class="card-content">
+              <h3>The Uninterrupted Couch Hour</h3>
+              <p>60 minutes of premium quality time. Phones in another room. No business calls, no commodity trade notifications. Just us.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="preorder">
+            <div class="card-icon"><i class="fa-solid fa-film"></i></div>
+            <div class="card-content">
+              <h3>The blank Check Movie Night</h3>
+              <p>You select the film. I am explicitly forbidden from complaining about the genre, asking plot questions, or falling asleep. Full attention guaranteed.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="preorder">
+            <div class="card-icon"><i class="fa-solid fa-award"></i></div>
+            <div class="card-content">
+              <h3>The 'You Were Right' Voucher</h3>
+              <p>A highly coveted token to be cashed in during our next mild disagreement. Forces an immediate concession and formal declaration that you were, in fact, completely correct.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+
+          <article class="menu-card" data-category="preorder">
+            <div class="card-icon"><i class="fa-solid fa-heart"></i></div>
+            <div class="card-content">
+              <h3>The Snuggle Sesh</h3>
+              <p>Your preference of cuddles and an optional side item of 'Head'.</p>
+            </div>
+            <button class="add-btn">+ Add to Cart</button>
+          </article>
+        </div>
+      </section>
+
+      <section id="cart-screen" class="sheet" aria-hidden="true">
+        <div class="sheet-backdrop"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <h2>Your Order</h2>
+          <ul id="cart-items" class="cart-list"></ul>
+
+          <textarea id="special-requests" name="special_requests" placeholder="Any special requests? (e.g., Please bring extra hugs, leave at the door...)" aria-label="Special requests"></textarea>
+
+          <label class="promo-row" for="promo-code">
+            <span>Promo code</span>
+            <input id="promo-code" type="text" value="BIRTHDAY100" readonly />
+          </label>
+
+          <div class="total-row">
+            <span>Total</span>
+            <strong>$0.00</strong>
+          </div>
+
+          <form id="checkout-form" action="https://formspree.io/f/meeyaklj" method="POST">
+            <input type="hidden" id="cart-data" name="cart" />
+            <button class="checkout-btn" type="submit">
+              <span class="btn-label">PLACE ORDER</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section id="tracking-screen" class="screen track-screen" aria-hidden="true">
+        <div class="track-card">
+          <h2>Long Distance Delivery Logistics: Juba ✈️ Egypt</h2>
+          <h3>Estimated Time of Arrival: 5 Minutes</h3>
+          <div class="delivery-track" aria-label="Delivery bike animation">
+            <i class="fa-solid fa-motorcycle delivery-bike"></i>
+          </div>
+          <div class="timeline">
+            <div class="timeline-node active">
+              <div class="node-dot"></div>
+              <div class="node-content">
+                <strong>Order Received</strong>
+                <p>Request pinged. Boyfriend is currently staring at a spreadsheet but is now actively thinking about you.</p>
+              </div>
+            </div>
+            <div class="timeline-node">
+              <div class="node-dot"></div>
+              <div class="node-content">
+                <strong>Prep Phase</strong>
+                <p>Stepping outside to find a quiet place to fulfill this.</p>
+              </div>
+            </div>
+            <div class="timeline-node">
+              <div class="node-dot"></div>
+              <div class="node-content">
+                <strong>Quality Control</strong>
+                <p>Double-checking to ensure maximum romantic output.</p>
+              </div>
+            </div>
+            <div class="timeline-node">
+              <div class="node-dot"></div>
+              <div class="node-content">
+                <strong>Out for Delivery</strong>
+                <p>Incoming across servers now.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="rating-modal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>Order Delivered! 🥳</h3>
+        <p>How was your delivery?</p>
+        <div class="rating-stars modal-stars" aria-label="Rate your delivery">
+          <button class="star" type="button" data-rating="1" aria-label="1 star"><i class="fa-regular fa-star"></i></button>
+          <button class="star" type="button" data-rating="2" aria-label="2 stars"><i class="fa-regular fa-star"></i></button>
+          <button class="star" type="button" data-rating="3" aria-label="3 stars"><i class="fa-regular fa-star"></i></button>
+          <button class="star" type="button" data-rating="4" aria-label="4 stars"><i class="fa-regular fa-star"></i></button>
+          <button class="star" type="button" data-rating="5" aria-label="5 stars"><i class="fa-regular fa-star"></i></button>
+        </div>
+        <textarea id="delivery-comment" name="delivery_comment" placeholder="Leave a review for your driver/boyfriend..."></textarea>
+        <button id="submit-review-btn" type="button">Submit Review</button>
+        <button id="back-home-btn" class="secondary-btn" type="button">Back to Menu</button>
+      </div>
+    </div>
+
+    <div id="confetti-layer" aria-hidden="true"></div>
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
