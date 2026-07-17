@@ -36,7 +36,7 @@
   var activeStream = null;
   var paymentTransitionTimer = null;
 
-  function showError(error) {
+  function logError(error) {
     var message = 'Unknown error';
     if (error && error.message) {
       message = error.message;
@@ -47,27 +47,7 @@
     if (window.console && window.console.error) {
       console.error(message);
     }
-
-    if (window.alert) {
-      window.alert('Us-Eats error: ' + message);
-    }
   }
-
-  window.addEventListener('error', function (event) {
-    var message = 'Unknown error';
-    if (event && event.message) {
-      message = event.message;
-    }
-
-    var source = event && event.filename ? event.filename : 'unknown';
-    var line = event && event.lineno ? event.lineno : 'unknown';
-
-    if (window.alert) {
-      window.alert('Us-Eats error: ' + message + ' at ' + source + ':' + line);
-    }
-
-    return false;
-  });
 
   function safeGetStorage(key) {
     try {
@@ -92,6 +72,19 @@
       return true;
     } catch (error) {
       return false;
+    }
+  }
+
+  function safeParseStorage(key) {
+    var rawValue = safeGetStorage(key);
+    if (!rawValue) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawValue);
+    } catch (error) {
+      return null;
     }
   }
 
@@ -122,7 +115,9 @@
     if (cartCount) {
       cartCount.textContent = cart.length;
     }
+
     renderCart();
+
     if (cartDataInput) {
       cartDataInput.value = JSON.stringify(cart);
     }
@@ -167,6 +162,7 @@
       if (!card || !card.dataset) {
         return;
       }
+
       var matches = card.dataset.category === mode;
       card.classList.toggle('hidden', !matches);
     });
@@ -178,6 +174,7 @@
     }
 
     clearTimeout(trackingTimer);
+
     timelineNodes.forEach(function (node) {
       if (node) {
         node.classList.remove('active');
@@ -185,7 +182,8 @@
     });
 
     var index = 0;
-    var activateNextNode = function () {
+
+    function activateNextNode() {
       if (!trackingScreen.classList.contains('active')) {
         return;
       }
@@ -205,7 +203,7 @@
         index += 1;
         trackingTimer = setTimeout(activateNextNode, 3000);
       }
-    };
+    }
 
     activateNextNode();
   }
@@ -235,6 +233,13 @@
       } catch (error) {
         // Ignore srcObject errors.
       }
+    }
+  }
+
+  function hideReviewModal() {
+    if (ratingModal) {
+      ratingModal.classList.remove('show');
+      ratingModal.setAttribute('aria-hidden', 'true');
     }
   }
 
@@ -301,13 +306,6 @@
     }
 
     safeRemoveStorage(reviewStateKey);
-  }
-
-  function hideReviewModal() {
-    if (ratingModal) {
-      ratingModal.classList.remove('show');
-      ratingModal.setAttribute('aria-hidden', 'true');
-    }
   }
 
   function showPaymentSuccess(message) {
@@ -386,6 +384,7 @@
       ratingModal.classList.add('show');
       ratingModal.setAttribute('aria-hidden', 'false');
     }
+
     vibrate([100, 50, 100]);
   }
 
@@ -435,6 +434,7 @@
           if (!card) {
             return;
           }
+
           var itemName = card.querySelector('h3').textContent;
           cart.push(itemName);
           updateCartUI();
@@ -573,31 +573,19 @@
   }
 
   function initializeApp() {
-    try {
-      filterCards('instant');
+    filterCards('instant');
 
-      var pendingReviewData = safeGetStorage(reviewStateKey);
-      if (pendingReviewData) {
-        try {
-          pendingReviewData = JSON.parse(pendingReviewData);
-        } catch (error) {
-          pendingReviewData = null;
-        }
-
-        if (pendingReviewData && pendingReviewData.scheduledAt) {
-          var remainingDelay = Math.max(0, reviewDelayMs - (Date.now() - pendingReviewData.scheduledAt));
-          queueReviewPrompt(remainingDelay || reviewDelayMs);
-        }
-      }
-
-      setTimeout(function () {
-        if (splashScreen) {
-          splashScreen.classList.add('fade-out');
-        }
-      }, 2500);
-    } catch (error) {
-      showError(error);
+    var pendingReviewData = safeParseStorage(reviewStateKey);
+    if (pendingReviewData && pendingReviewData.scheduledAt) {
+      var remainingDelay = Math.max(0, reviewDelayMs - (Date.now() - pendingReviewData.scheduledAt));
+      queueReviewPrompt(remainingDelay || reviewDelayMs);
     }
+
+    setTimeout(function () {
+      if (splashScreen) {
+        splashScreen.classList.add('fade-out');
+      }
+    }, 2500);
   }
 
   window.addEventListener('DOMContentLoaded', function () {
@@ -605,11 +593,11 @@
       initializeInteractions();
       initializeApp();
     } catch (error) {
-      showError(error);
+      logError(error);
     }
   });
 
-  setTimeout(function () {
+  window.setTimeout(function () {
     try {
       if (splashScreen) {
         splashScreen.classList.add('fade-out');
@@ -635,7 +623,7 @@
         cartScreen.setAttribute('aria-hidden', 'true');
       }
     } catch (error) {
-      showError(error);
+      logError(error);
     }
   }, 3000);
 })();
