@@ -6,6 +6,8 @@
   --muted: #7a7a7a;
   --border: #ececec;
   --white: #ffffff;
+  background-color: #f7f7f7 !important;
+  color: #333333 !important;
 }
 
 * {
@@ -16,9 +18,32 @@ body {
   margin: 0;
   font-family: 'Inter', sans-serif;
   background: linear-gradient(180deg, #fff5ee 0%, var(--bg) 100%);
-  color: var(--text);
+  background-color: #f7f7f7 !important;
+  color: #333333 !important;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+#visual-debugger {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 999999;
+  background: #d32f2f;
+  color: #ffffff;
+  padding: 16px 20px;
+  font-size: 15px;
+  line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  max-height: 40vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+#visual-debugger div {
+  margin-bottom: 4px;
+  word-break: break-word;
 }
 
 button,

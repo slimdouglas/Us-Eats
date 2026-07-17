@@ -1,4 +1,114 @@
 (function () {
+  window.onerror = function (message, source, lineno, colno, error) {
+    var detail = message;
+    if (error && error.message) {
+      detail = error.message;
+    }
+
+    if (source) {
+      detail += ' (' + source + ':' + lineno + ')';
+    }
+
+    appendDebug('JS Error: ' + detail);
+    return false;
+  };
+
+  window.onunhandledrejection = function (event) {
+    var detail = 'Unhandled promise rejection';
+    if (event && event.reason) {
+      detail = event.reason.message || String(event.reason);
+    }
+
+    appendDebug('Unhandled Rejection: ' + detail);
+  };
+
+  function ensureDebugConsole() {
+    var existing = document.getElementById('visual-debugger');
+    if (existing) {
+      return existing;
+    }
+
+    var panel = document.createElement('div');
+    panel.id = 'visual-debugger';
+    panel.setAttribute('role', 'log');
+    panel.setAttribute('aria-live', 'polite');
+    panel.textContent = 'Diagnostic console ready';
+    document.body.insertBefore(panel, document.body.firstChild);
+    return panel;
+  }
+
+  function appendDebug(message) {
+    if (!document || !document.body) {
+      return;
+    }
+
+    var panel = ensureDebugConsole();
+    var entry = document.createElement('div');
+    entry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+    panel.appendChild(entry);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function forceRemoveSplash() {
+    try {
+      if (splashScreen) {
+        splashScreen.classList.add('fade-out');
+        splashScreen.style.display = 'none';
+      }
+
+      if (homeScreen) {
+        homeScreen.classList.add('active');
+        homeScreen.setAttribute('aria-hidden', 'false');
+      }
+
+      if (trackingScreen) {
+        trackingScreen.classList.remove('active');
+        trackingScreen.setAttribute('aria-hidden', 'true');
+      }
+
+      if (paymentScreen) {
+        paymentScreen.classList.remove('active');
+        paymentScreen.setAttribute('aria-hidden', 'true');
+      }
+
+      if (cartScreen) {
+        cartScreen.classList.remove('open');
+        cartScreen.setAttribute('aria-hidden', 'true');
+      }
+    } catch (error) {
+      logError(error);
+    }
+  }
+
+  function safeFetch(url, options) {
+    try {
+      return fetch(url, options).catch(function (error) {
+        var reason = error && error.message ? error.message : String(error);
+        appendDebug('Formspree fetch failed: ' + reason);
+        return Promise.reject(error);
+      });
+    } catch (error) {
+      var reason = error && error.message ? error.message : String(error);
+      appendDebug('Formspree fetch threw: ' + reason);
+      return Promise.resolve(null);
+    }
+  }
+
+  function logError(error) {
+    var message = 'Unknown error';
+    if (error && error.message) {
+      message = error.message;
+    } else if (typeof error === 'string') {
+      message = error;
+    }
+
+    appendDebug('Error: ' + message);
+
+    if (window.console && window.console.error) {
+      console.error(message);
+    }
+  }
+
   var cart = [];
   var homeScreen = document.getElementById('home-screen');
   var cartScreen = document.getElementById('cart-screen');
@@ -36,18 +146,7 @@
   var activeStream = null;
   var paymentTransitionTimer = null;
 
-  function logError(error) {
-    var message = 'Unknown error';
-    if (error && error.message) {
-      message = error.message;
-    } else if (typeof error === 'string') {
-      message = error;
-    }
-
-    if (window.console && window.console.error) {
-      console.error(message);
-    }
-  }
+  appendDebug('Script initialized');
 
   function safeGetStorage(key) {
     try {
@@ -346,6 +445,7 @@
     }
 
     if (!navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      appendDebug('Camera API unavailable');
       showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
       paymentTransitionTimer = setTimeout(function () {
         transitionToTracking();
@@ -353,30 +453,42 @@
       return;
     }
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-      .then(function (stream) {
-        activeStream = stream;
-        if (cameraFeed) {
-          cameraFeed.srcObject = stream;
-          cameraFeed.play().catch(function () {
-            // Ignore playback issues.
-          });
-        }
+    try {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+        .then(function (stream) {
+          activeStream = stream;
+          if (cameraFeed) {
+            cameraFeed.srcObject = stream;
+            cameraFeed.play().catch(function (error) {
+              var reason = error && error.message ? error.message : String(error);
+              appendDebug('Camera playback failed: ' + reason);
+            });
+          }
 
-        setTimeout(function () {
-          stopCameraStream();
-          showPaymentSuccess('Payment Successful. Face Card never declines. 🔥');
+          setTimeout(function () {
+            stopCameraStream();
+            showPaymentSuccess('Payment Successful. Face Card never declines. 🔥');
+            paymentTransitionTimer = setTimeout(function () {
+              transitionToTracking();
+            }, 3000);
+          }, 3500);
+        })
+        .catch(function (error) {
+          var reason = error && error.message ? error.message : String(error);
+          appendDebug('Camera access denied: ' + reason);
+          showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
           paymentTransitionTimer = setTimeout(function () {
             transitionToTracking();
           }, 3000);
-        }, 3500);
-      })
-      .catch(function () {
-        showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
-        paymentTransitionTimer = setTimeout(function () {
-          transitionToTracking();
-        }, 3000);
-      });
+        });
+    } catch (error) {
+      var reason = error && error.message ? error.message : String(error);
+      appendDebug('Camera request threw: ' + reason);
+      showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
+      paymentTransitionTimer = setTimeout(function () {
+        transitionToTracking();
+      }, 3000);
+    }
   }
 
   function showReviewModal() {
@@ -494,7 +606,7 @@
         reviewData.set('special_requests', specialRequestsInput ? specialRequestsInput.value : '');
 
         if (checkoutForm && checkoutForm.action) {
-          fetch(checkoutForm.action, {
+          safeFetch(checkoutForm.action, {
             method: 'POST',
             body: reviewData,
             headers: { Accept: 'application/json' }
@@ -530,7 +642,7 @@
         formData.set('special_requests', specialRequestsInput ? specialRequestsInput.value : '');
 
         if (checkoutForm.action) {
-          fetch(checkoutForm.action, {
+          safeFetch(checkoutForm.action, {
             method: 'POST',
             body: formData,
             headers: { Accept: 'application/json' }
@@ -582,48 +694,22 @@
     }
 
     setTimeout(function () {
-      if (splashScreen) {
-        splashScreen.classList.add('fade-out');
-      }
-    }, 2500);
+      forceRemoveSplash();
+    }, 3000);
   }
 
   window.addEventListener('DOMContentLoaded', function () {
     try {
       initializeInteractions();
       initializeApp();
+      forceRemoveSplash();
     } catch (error) {
       logError(error);
+      forceRemoveSplash();
     }
   });
 
   window.setTimeout(function () {
-    try {
-      if (splashScreen) {
-        splashScreen.classList.add('fade-out');
-      }
-
-      if (homeScreen) {
-        homeScreen.classList.add('active');
-        homeScreen.setAttribute('aria-hidden', 'false');
-      }
-
-      if (trackingScreen) {
-        trackingScreen.classList.remove('active');
-        trackingScreen.setAttribute('aria-hidden', 'true');
-      }
-
-      if (paymentScreen) {
-        paymentScreen.classList.remove('active');
-        paymentScreen.setAttribute('aria-hidden', 'true');
-      }
-
-      if (cartScreen) {
-        cartScreen.classList.remove('open');
-        cartScreen.setAttribute('aria-hidden', 'true');
-      }
-    } catch (error) {
-      logError(error);
-    }
+    forceRemoveSplash();
   }, 3000);
 })();
