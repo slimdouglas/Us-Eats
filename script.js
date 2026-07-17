@@ -1,380 +1,641 @@
-const cart = [];
-const homeScreen = document.getElementById('home-screen');
-const cartScreen = document.getElementById('cart-screen');
-const paymentScreen = document.getElementById('payment-screen');
-const trackingScreen = document.getElementById('tracking-screen');
-const cartToggle = document.getElementById('cart-toggle');
-const cartCount = document.getElementById('cart-count');
-const cartItems = document.getElementById('cart-items');
-const cartDataInput = document.getElementById('cart-data');
-const specialRequestsInput = document.getElementById('special-requests');
-const checkoutForm = document.getElementById('checkout-form');
-const checkoutButton = checkoutForm.querySelector('.checkout-btn');
-const toast = document.getElementById('toast');
-const tabs = document.querySelectorAll('.tab');
-const menuCards = document.querySelectorAll('.menu-card');
-const addButtons = document.querySelectorAll('.add-btn');
-const sheetBackdrop = document.querySelector('.sheet-backdrop');
-const timelineNodes = document.querySelectorAll('.timeline-node');
-const splashScreen = document.getElementById('splash-screen');
-const ratingModal = document.getElementById('rating-modal');
-const stars = document.querySelectorAll('.star');
-const deliveryComment = document.getElementById('delivery-comment');
-const submitReviewButton = document.getElementById('submit-review-btn');
-const backHomeButton = document.getElementById('back-home-btn');
-const confettiLayer = document.getElementById('confetti-layer');
-const cameraFeed = document.getElementById('camera-feed');
-const scannerContainer = document.querySelector('.scanner-container');
-const paymentSuccess = document.getElementById('payment-success');
-const paymentSuccessText = paymentSuccess.querySelector('h3');
-const reviewStateKey = 'us-eats-review-prompt';
-const reviewDelayMs = 120000;
-let trackingTimer = null;
-let reviewTimer = null;
-let selectedRating = 0;
-let activeStream = null;
-let paymentTransitionTimer = null;
+(function () {
+  var cart = [];
+  var homeScreen = document.getElementById('home-screen');
+  var cartScreen = document.getElementById('cart-screen');
+  var paymentScreen = document.getElementById('payment-screen');
+  var trackingScreen = document.getElementById('tracking-screen');
+  var cartToggle = document.getElementById('cart-toggle');
+  var cartCount = document.getElementById('cart-count');
+  var cartItems = document.getElementById('cart-items');
+  var cartDataInput = document.getElementById('cart-data');
+  var specialRequestsInput = document.getElementById('special-requests');
+  var checkoutForm = document.getElementById('checkout-form');
+  var checkoutButton = checkoutForm ? checkoutForm.querySelector('.checkout-btn') : null;
+  var toast = document.getElementById('toast');
+  var tabs = document.querySelectorAll('.tab');
+  var menuCards = document.querySelectorAll('.menu-card');
+  var addButtons = document.querySelectorAll('.add-btn');
+  var sheetBackdrop = document.querySelector('.sheet-backdrop');
+  var timelineNodes = document.querySelectorAll('.timeline-node');
+  var splashScreen = document.getElementById('splash-screen');
+  var ratingModal = document.getElementById('rating-modal');
+  var stars = document.querySelectorAll('.star');
+  var deliveryComment = document.getElementById('delivery-comment');
+  var submitReviewButton = document.getElementById('submit-review-btn');
+  var backHomeButton = document.getElementById('back-home-btn');
+  var confettiLayer = document.getElementById('confetti-layer');
+  var cameraFeed = document.getElementById('camera-feed');
+  var scannerContainer = document.querySelector('.scanner-container');
+  var paymentSuccess = document.getElementById('payment-success');
+  var paymentSuccessText = paymentSuccess ? paymentSuccess.querySelector('h3') : null;
+  var reviewStateKey = 'us-eats-review-prompt';
+  var reviewDelayMs = 120000;
+  var trackingTimer = null;
+  var reviewTimer = null;
+  var selectedRating = 0;
+  var activeStream = null;
+  var paymentTransitionTimer = null;
 
-const vibrate = (pattern) => {
-  if (navigator.vibrate) {
-    navigator.vibrate(pattern);
-  }
-};
+  function showError(error) {
+    var message = 'Unknown error';
+    if (error && error.message) {
+      message = error.message;
+    } else if (typeof error === 'string') {
+      message = error;
+    }
 
-function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add('show');
-  clearTimeout(showToast.timeout);
-  showToast.timeout = setTimeout(() => {
-    toast.classList.remove('show');
-  }, 1200);
-}
+    if (window.console && window.console.error) {
+      console.error(message);
+    }
 
-function updateCartUI() {
-  cartCount.textContent = cart.length;
-  renderCart();
-  cartDataInput.value = JSON.stringify(cart);
-}
-
-function renderCart() {
-  if (!cart.length) {
-    cartItems.innerHTML = '<li>Your cart is empty.</li>';
-    return;
+    if (window.alert) {
+      window.alert('Us-Eats error: ' + message);
+    }
   }
 
-  cartItems.innerHTML = cart.map((item) => `<li>${item}</li>`).join('');
-}
+  window.addEventListener('error', function (event) {
+    var message = 'Unknown error';
+    if (event && event.message) {
+      message = event.message;
+    }
 
-function openCart() {
-  cartScreen.classList.add('open');
-  cartScreen.setAttribute('aria-hidden', 'false');
-  renderCart();
-}
+    var source = event && event.filename ? event.filename : 'unknown';
+    var line = event && event.lineno ? event.lineno : 'unknown';
 
-function closeCart() {
-  cartScreen.classList.remove('open');
-  cartScreen.setAttribute('aria-hidden', 'true');
-}
+    if (window.alert) {
+      window.alert('Us-Eats error: ' + message + ' at ' + source + ':' + line);
+    }
 
-function filterCards(mode) {
-  menuCards.forEach((card) => {
-    const matches = card.dataset.category === mode;
-    card.classList.toggle('hidden', !matches);
+    return false;
   });
-}
 
-function playTrackingTimeline() {
-  clearTimeout(trackingTimer);
-  timelineNodes.forEach((node) => node.classList.remove('active'));
+  function safeGetStorage(key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (error) {
+      return null;
+    }
+  }
 
-  let index = 0;
-  const activateNextNode = () => {
-    if (!trackingScreen.classList.contains('active')) {
+  function safeSetStorage(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function safeRemoveStorage(key) {
+    try {
+      window.localStorage.removeItem(key);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function vibrate(pattern) {
+    if (navigator && navigator.vibrate) {
+      try {
+        navigator.vibrate(pattern);
+      } catch (error) {
+        // Ignore vibration errors.
+      }
+    }
+  }
+
+  function showToast(message) {
+    if (!toast) {
       return;
     }
 
-    if (index < timelineNodes.length) {
-      timelineNodes[index].classList.add('active');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(showToast.timeout);
+    showToast.timeout = setTimeout(function () {
+      toast.classList.remove('show');
+    }, 1200);
+  }
 
-      if (index === timelineNodes.length - 1) {
-        clearTimeout(reviewTimer);
-        reviewTimer = setTimeout(() => {
-          showReviewModal();
-        }, 2000);
-      }
-
-      index += 1;
-      trackingTimer = setTimeout(activateNextNode, 3000);
+  function updateCartUI() {
+    if (cartCount) {
+      cartCount.textContent = cart.length;
     }
-  };
-
-  activateNextNode();
-}
-
-function stopCameraStream() {
-  if (activeStream) {
-    activeStream.getTracks().forEach((track) => track.stop());
-    activeStream = null;
-  }
-  if (cameraFeed) {
-    cameraFeed.pause();
-    cameraFeed.srcObject = null;
-  }
-}
-
-function resetApp() {
-  cart.length = 0;
-  updateCartUI();
-  clearTimeout(trackingTimer);
-  clearTimeout(reviewTimer);
-  clearTimeout(paymentTransitionTimer);
-  stopCameraStream();
-  timelineNodes.forEach((node) => node.classList.remove('active'));
-  trackingScreen.classList.remove('active');
-  trackingScreen.setAttribute('aria-hidden', 'true');
-  paymentScreen.classList.remove('active');
-  paymentScreen.setAttribute('aria-hidden', 'true');
-  homeScreen.classList.add('active');
-  homeScreen.setAttribute('aria-hidden', 'false');
-  closeCart();
-  hideReviewModal();
-  if (scannerContainer) {
-    scannerContainer.classList.remove('hidden');
-  }
-  if (paymentSuccess) {
-    paymentSuccess.classList.add('hidden');
-  }
-  if (specialRequestsInput) {
-    specialRequestsInput.value = '';
-  }
-  if (deliveryComment) {
-    deliveryComment.value = '';
-  }
-  if (paymentSuccessText) {
-    paymentSuccessText.textContent = 'Payment Successful. Face Card never declines. 🔥';
-  }
-  selectedRating = 0;
-  stars.forEach((star) => star.classList.remove('active'));
-  localStorage.removeItem(reviewStateKey);
-}
-
-function hideReviewModal() {
-  ratingModal.classList.remove('show');
-  ratingModal.setAttribute('aria-hidden', 'true');
-}
-
-function showPaymentSuccess(message) {
-  if (scannerContainer) {
-    scannerContainer.classList.add('hidden');
-  }
-  if (paymentSuccess) {
-    paymentSuccess.classList.remove('hidden');
-  }
-  if (paymentSuccessText) {
-    paymentSuccessText.textContent = message;
-  }
-}
-
-function transitionToTracking() {
-  paymentScreen.classList.remove('active');
-  paymentScreen.setAttribute('aria-hidden', 'true');
-  trackingScreen.classList.add('active');
-  trackingScreen.setAttribute('aria-hidden', 'false');
-  playTrackingTimeline();
-}
-
-function startFaceCardFlow() {
-  if (scannerContainer) {
-    scannerContainer.classList.remove('hidden');
-  }
-  if (paymentSuccess) {
-    paymentSuccess.classList.add('hidden');
+    renderCart();
+    if (cartDataInput) {
+      cartDataInput.value = JSON.stringify(cart);
+    }
   }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
-    paymentTransitionTimer = setTimeout(() => {
-      transitionToTracking();
-    }, 3000);
-    return;
+  function renderCart() {
+    if (!cartItems) {
+      return;
+    }
+
+    if (!cart.length) {
+      cartItems.innerHTML = '<li>Your cart is empty.</li>';
+      return;
+    }
+
+    cartItems.innerHTML = cart.map(function (item) {
+      return '<li>' + item + '</li>';
+    }).join('');
   }
 
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-    .then((stream) => {
-      activeStream = stream;
-      if (cameraFeed) {
-        cameraFeed.srcObject = stream;
-        cameraFeed.play().catch(() => {});
+  function openCart() {
+    if (cartScreen) {
+      cartScreen.classList.add('open');
+      cartScreen.setAttribute('aria-hidden', 'false');
+    }
+    renderCart();
+  }
+
+  function closeCart() {
+    if (cartScreen) {
+      cartScreen.classList.remove('open');
+      cartScreen.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function filterCards(mode) {
+    if (!menuCards || !menuCards.length) {
+      return;
+    }
+
+    menuCards.forEach(function (card) {
+      if (!card || !card.dataset) {
+        return;
+      }
+      var matches = card.dataset.category === mode;
+      card.classList.toggle('hidden', !matches);
+    });
+  }
+
+  function playTrackingTimeline() {
+    if (!trackingScreen || !timelineNodes || !timelineNodes.length) {
+      return;
+    }
+
+    clearTimeout(trackingTimer);
+    timelineNodes.forEach(function (node) {
+      if (node) {
+        node.classList.remove('active');
+      }
+    });
+
+    var index = 0;
+    var activateNextNode = function () {
+      if (!trackingScreen.classList.contains('active')) {
+        return;
       }
 
-      setTimeout(() => {
-        stopCameraStream();
-        showPaymentSuccess('Payment Successful. Face Card never declines. 🔥');
-        paymentTransitionTimer = setTimeout(() => {
-          transitionToTracking();
-        }, 3000);
-      }, 3500);
-    })
-    .catch(() => {
+      if (index < timelineNodes.length) {
+        if (timelineNodes[index]) {
+          timelineNodes[index].classList.add('active');
+        }
+
+        if (index === timelineNodes.length - 1) {
+          clearTimeout(reviewTimer);
+          reviewTimer = setTimeout(function () {
+            showReviewModal();
+          }, 2000);
+        }
+
+        index += 1;
+        trackingTimer = setTimeout(activateNextNode, 3000);
+      }
+    };
+
+    activateNextNode();
+  }
+
+  function stopCameraStream() {
+    if (activeStream && activeStream.getTracks) {
+      try {
+        activeStream.getTracks().forEach(function (track) {
+          track.stop();
+        });
+      } catch (error) {
+        // Ignore stream stop issues.
+      }
+    }
+
+    activeStream = null;
+
+    if (cameraFeed) {
+      try {
+        cameraFeed.pause();
+      } catch (error) {
+        // Ignore pause errors.
+      }
+
+      try {
+        cameraFeed.srcObject = null;
+      } catch (error) {
+        // Ignore srcObject errors.
+      }
+    }
+  }
+
+  function resetApp() {
+    cart.length = 0;
+    updateCartUI();
+    clearTimeout(trackingTimer);
+    clearTimeout(reviewTimer);
+    clearTimeout(paymentTransitionTimer);
+    stopCameraStream();
+
+    if (timelineNodes && timelineNodes.length) {
+      timelineNodes.forEach(function (node) {
+        if (node) {
+          node.classList.remove('active');
+        }
+      });
+    }
+
+    if (trackingScreen) {
+      trackingScreen.classList.remove('active');
+      trackingScreen.setAttribute('aria-hidden', 'true');
+    }
+
+    if (paymentScreen) {
+      paymentScreen.classList.remove('active');
+      paymentScreen.setAttribute('aria-hidden', 'true');
+    }
+
+    if (homeScreen) {
+      homeScreen.classList.add('active');
+      homeScreen.setAttribute('aria-hidden', 'false');
+    }
+
+    closeCart();
+    hideReviewModal();
+
+    if (scannerContainer) {
+      scannerContainer.classList.remove('hidden');
+    }
+
+    if (paymentSuccess) {
+      paymentSuccess.classList.add('hidden');
+    }
+
+    if (specialRequestsInput) {
+      specialRequestsInput.value = '';
+    }
+
+    if (deliveryComment) {
+      deliveryComment.value = '';
+    }
+
+    if (paymentSuccessText) {
+      paymentSuccessText.textContent = 'Payment Successful. Face Card never declines. 🔥';
+    }
+
+    selectedRating = 0;
+
+    if (stars && stars.length) {
+      stars.forEach(function (star) {
+        star.classList.remove('active');
+      });
+    }
+
+    safeRemoveStorage(reviewStateKey);
+  }
+
+  function hideReviewModal() {
+    if (ratingModal) {
+      ratingModal.classList.remove('show');
+      ratingModal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function showPaymentSuccess(message) {
+    if (scannerContainer) {
+      scannerContainer.classList.add('hidden');
+    }
+
+    if (paymentSuccess) {
+      paymentSuccess.classList.remove('hidden');
+    }
+
+    if (paymentSuccessText) {
+      paymentSuccessText.textContent = message;
+    }
+  }
+
+  function transitionToTracking() {
+    if (paymentScreen) {
+      paymentScreen.classList.remove('active');
+      paymentScreen.setAttribute('aria-hidden', 'true');
+    }
+
+    if (trackingScreen) {
+      trackingScreen.classList.add('active');
+      trackingScreen.setAttribute('aria-hidden', 'false');
+    }
+
+    playTrackingTimeline();
+  }
+
+  function startFaceCardFlow() {
+    if (scannerContainer) {
+      scannerContainer.classList.remove('hidden');
+    }
+
+    if (paymentSuccess) {
+      paymentSuccess.classList.add('hidden');
+    }
+
+    if (!navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
-      paymentTransitionTimer = setTimeout(() => {
+      paymentTransitionTimer = setTimeout(function () {
         transitionToTracking();
       }, 3000);
-    });
-}
-
-function showReviewModal() {
-  ratingModal.classList.add('show');
-  ratingModal.setAttribute('aria-hidden', 'false');
-  vibrate([100, 50, 100]);
-}
-
-function queueReviewPrompt(delayMs = reviewDelayMs) {
-  clearTimeout(reviewTimer);
-  reviewTimer = setTimeout(() => {
-    if (trackingScreen.classList.contains('active')) {
-      showReviewModal();
-    } else {
-      showReviewModal();
+      return;
     }
-  }, delayMs);
-}
 
-function launchConfetti() {
-  const colors = ['#ff5a00', '#ffd700', '#ff7a24', '#ffffff'];
-  confettiLayer.innerHTML = '';
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      .then(function (stream) {
+        activeStream = stream;
+        if (cameraFeed) {
+          cameraFeed.srcObject = stream;
+          cameraFeed.play().catch(function () {
+            // Ignore playback issues.
+          });
+        }
 
-  for (let i = 0; i < 40; i += 1) {
-    const piece = document.createElement('span');
-    piece.className = 'confetti-piece';
-    const left = Math.random() * 100;
-    const duration = 1.6 + Math.random() * 1.2;
-    const drift = (Math.random() - 0.5) * 220;
-    piece.style.left = `${left}%`;
-    piece.style.background = colors[i % colors.length];
-    piece.style.setProperty('--duration', `${duration}s`);
-    piece.style.setProperty('--x-fall', `${drift}px`);
-    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
-    confettiLayer.appendChild(piece);
+        setTimeout(function () {
+          stopCameraStream();
+          showPaymentSuccess('Payment Successful. Face Card never declines. 🔥');
+          paymentTransitionTimer = setTimeout(function () {
+            transitionToTracking();
+          }, 3000);
+        }, 3500);
+      })
+      .catch(function () {
+        showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
+        paymentTransitionTimer = setTimeout(function () {
+          transitionToTracking();
+        }, 3000);
+      });
   }
 
-  setTimeout(() => {
+  function showReviewModal() {
+    if (ratingModal) {
+      ratingModal.classList.add('show');
+      ratingModal.setAttribute('aria-hidden', 'false');
+    }
+    vibrate([100, 50, 100]);
+  }
+
+  function queueReviewPrompt(delayMs) {
+    if (typeof delayMs === 'undefined') {
+      delayMs = reviewDelayMs;
+    }
+
+    clearTimeout(reviewTimer);
+    reviewTimer = setTimeout(function () {
+      showReviewModal();
+    }, delayMs);
+  }
+
+  function launchConfetti() {
+    if (!confettiLayer) {
+      return;
+    }
+
+    var colors = ['#ff5a00', '#ffd700', '#ff7a24', '#ffffff'];
     confettiLayer.innerHTML = '';
-  }, 2400);
-}
 
-addButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    const card = button.closest('.menu-card');
-    const itemName = card.querySelector('h3').textContent;
-    cart.push(itemName);
-    updateCartUI();
-    vibrate(50);
-    showToast('Added!');
-  });
-});
+    for (var i = 0; i < 40; i += 1) {
+      var piece = document.createElement('span');
+      piece.className = 'confetti-piece';
+      var left = Math.random() * 100;
+      var duration = 1.6 + Math.random() * 1.2;
+      var drift = (Math.random() - 0.5) * 220;
+      piece.style.left = left + '%';
+      piece.style.background = colors[i % colors.length];
+      piece.style.setProperty('--duration', duration + 's');
+      piece.style.setProperty('--x-fall', drift + 'px');
+      piece.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+      confettiLayer.appendChild(piece);
+    }
 
-cartToggle.addEventListener('click', () => {
-  vibrate(50);
-  openCart();
-});
-
-sheetBackdrop.addEventListener('click', closeCart);
-
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') {
-    closeCart();
+    setTimeout(function () {
+      confettiLayer.innerHTML = '';
+    }, 2400);
   }
-});
 
-tabs.forEach((tab) => {
-  tab.addEventListener('click', () => {
-    vibrate(50);
-    tabs.forEach((btn) => btn.classList.remove('active'));
-    tab.classList.add('active');
-    filterCards(tab.dataset.mode);
-  });
-});
+  function initializeInteractions() {
+    if (addButtons && addButtons.length) {
+      addButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          var card = button.closest('.menu-card');
+          if (!card) {
+            return;
+          }
+          var itemName = card.querySelector('h3').textContent;
+          cart.push(itemName);
+          updateCartUI();
+          vibrate(50);
+          showToast('Added!');
+        });
+      });
+    }
 
-stars.forEach((star) => {
-  star.addEventListener('click', () => {
-    selectedRating = Number(star.dataset.rating);
-    stars.forEach((item, index) => {
-      item.classList.toggle('active', index < selectedRating);
+    if (cartToggle) {
+      cartToggle.addEventListener('click', function () {
+        vibrate(50);
+        openCart();
+      });
+    }
+
+    if (sheetBackdrop) {
+      sheetBackdrop.addEventListener('click', closeCart);
+    }
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        closeCart();
+      }
     });
-  });
-});
 
-submitReviewButton.addEventListener('click', () => {
-  const reviewData = new FormData();
-  reviewData.set('rating', String(selectedRating));
-  reviewData.set('delivery_comment', deliveryComment.value.trim());
-  reviewData.set('cart', JSON.stringify(cart));
-  reviewData.set('special_requests', specialRequestsInput ? specialRequestsInput.value : '');
+    if (tabs && tabs.length) {
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          vibrate(50);
+          tabs.forEach(function (btn) {
+            btn.classList.remove('active');
+          });
+          tab.classList.add('active');
+          filterCards(tab.dataset.mode);
+        });
+      });
+    }
 
-  fetch(checkoutForm.action, {
-    method: 'POST',
-    body: reviewData,
-    headers: { Accept: 'application/json' }
-  });
+    if (stars && stars.length) {
+      stars.forEach(function (star) {
+        star.addEventListener('click', function () {
+          selectedRating = Number(star.dataset.rating);
+          stars.forEach(function (item, index) {
+            item.classList.toggle('active', index < selectedRating);
+          });
+        });
+      });
+    }
 
-  launchConfetti();
-  setTimeout(() => {
-    resetApp();
-  }, 3000);
-});
+    if (submitReviewButton) {
+      submitReviewButton.addEventListener('click', function () {
+        var reviewData = new FormData();
+        reviewData.set('rating', String(selectedRating));
+        reviewData.set('delivery_comment', deliveryComment ? deliveryComment.value.trim() : '');
+        reviewData.set('cart', JSON.stringify(cart));
+        reviewData.set('special_requests', specialRequestsInput ? specialRequestsInput.value : '');
 
-backHomeButton.addEventListener('click', resetApp);
+        if (checkoutForm && checkoutForm.action) {
+          fetch(checkoutForm.action, {
+            method: 'POST',
+            body: reviewData,
+            headers: { Accept: 'application/json' }
+          });
+        }
 
-window.addEventListener('DOMContentLoaded', () => {
-  filterCards('instant');
-  const pendingReview = JSON.parse(localStorage.getItem(reviewStateKey) || 'null');
-  if (pendingReview) {
-    const remainingDelay = Math.max(0, reviewDelayMs - (Date.now() - pendingReview.scheduledAt));
-    queueReviewPrompt(remainingDelay || reviewDelayMs);
+        launchConfetti();
+        setTimeout(function () {
+          resetApp();
+        }, 3000);
+      });
+    }
+
+    if (backHomeButton) {
+      backHomeButton.addEventListener('click', resetApp);
+    }
+
+    if (checkoutForm) {
+      checkoutForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        var originalText = checkoutButton ? checkoutButton.innerHTML : '';
+        if (checkoutButton) {
+          checkoutButton.classList.add('is-loading');
+          checkoutButton.disabled = true;
+          checkoutButton.innerHTML = '<span class="btn-label">Sending…</span><i class="fa-solid fa-spinner fa-spin"></i>';
+        }
+
+        vibrate(50);
+
+        var formData = new FormData(checkoutForm);
+        formData.set('cart', JSON.stringify(cart));
+        formData.set('special_requests', specialRequestsInput ? specialRequestsInput.value : '');
+
+        if (checkoutForm.action) {
+          fetch(checkoutForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: { Accept: 'application/json' }
+          });
+        }
+
+        safeSetStorage(reviewStateKey, JSON.stringify({ scheduledAt: Date.now() }));
+
+        window.setTimeout(function () {
+          if (homeScreen) {
+            homeScreen.classList.remove('active');
+            homeScreen.setAttribute('aria-hidden', 'true');
+          }
+
+          if (cartScreen) {
+            cartScreen.classList.remove('open');
+            cartScreen.setAttribute('aria-hidden', 'true');
+          }
+
+          if (paymentScreen) {
+            paymentScreen.classList.add('active');
+            paymentScreen.setAttribute('aria-hidden', 'false');
+          }
+
+          if (trackingScreen) {
+            trackingScreen.classList.remove('active');
+            trackingScreen.setAttribute('aria-hidden', 'true');
+          }
+
+          if (checkoutButton) {
+            checkoutButton.classList.remove('is-loading');
+            checkoutButton.disabled = false;
+            checkoutButton.innerHTML = originalText;
+          }
+
+          startFaceCardFlow();
+        }, 1000);
+      });
+    }
   }
 
-  setTimeout(() => {
-    splashScreen.classList.add('fade-out');
-  }, 2500);
-});
+  function initializeApp() {
+    try {
+      filterCards('instant');
 
-checkoutForm.addEventListener('submit', (event) => {
-  event.preventDefault();
+      var pendingReviewData = safeGetStorage(reviewStateKey);
+      if (pendingReviewData) {
+        try {
+          pendingReviewData = JSON.parse(pendingReviewData);
+        } catch (error) {
+          pendingReviewData = null;
+        }
 
-  const originalText = checkoutButton.innerHTML;
-  checkoutButton.classList.add('is-loading');
-  checkoutButton.disabled = true;
-  checkoutButton.innerHTML = '<span class="btn-label">Sending…</span><i class="fa-solid fa-spinner fa-spin"></i>';
+        if (pendingReviewData && pendingReviewData.scheduledAt) {
+          var remainingDelay = Math.max(0, reviewDelayMs - (Date.now() - pendingReviewData.scheduledAt));
+          queueReviewPrompt(remainingDelay || reviewDelayMs);
+        }
+      }
 
-  vibrate(50);
+      setTimeout(function () {
+        if (splashScreen) {
+          splashScreen.classList.add('fade-out');
+        }
+      }, 2500);
+    } catch (error) {
+      showError(error);
+    }
+  }
 
-  const formData = new FormData(checkoutForm);
-  formData.set('cart', JSON.stringify(cart));
-  formData.set('special_requests', specialRequestsInput ? specialRequestsInput.value : '');
-
-  fetch(checkoutForm.action, {
-    method: 'POST',
-    body: formData,
-    headers: { Accept: 'application/json' }
+  window.addEventListener('DOMContentLoaded', function () {
+    try {
+      initializeInteractions();
+      initializeApp();
+    } catch (error) {
+      showError(error);
+    }
   });
 
-  localStorage.setItem(reviewStateKey, JSON.stringify({ scheduledAt: Date.now() }));
+  setTimeout(function () {
+    try {
+      if (splashScreen) {
+        splashScreen.classList.add('fade-out');
+      }
 
-  window.setTimeout(() => {
-    homeScreen.classList.remove('active');
-    homeScreen.setAttribute('aria-hidden', 'true');
-    cartScreen.classList.remove('open');
-    cartScreen.setAttribute('aria-hidden', 'true');
-    paymentScreen.classList.add('active');
-    paymentScreen.setAttribute('aria-hidden', 'false');
-    trackingScreen.classList.remove('active');
-    trackingScreen.setAttribute('aria-hidden', 'true');
+      if (homeScreen) {
+        homeScreen.classList.add('active');
+        homeScreen.setAttribute('aria-hidden', 'false');
+      }
 
-    checkoutButton.classList.remove('is-loading');
-    checkoutButton.disabled = false;
-    checkoutButton.innerHTML = originalText;
+      if (trackingScreen) {
+        trackingScreen.classList.remove('active');
+        trackingScreen.setAttribute('aria-hidden', 'true');
+      }
 
-    startFaceCardFlow();
-  }, 1000);
-});
+      if (paymentScreen) {
+        paymentScreen.classList.remove('active');
+        paymentScreen.setAttribute('aria-hidden', 'true');
+      }
+
+      if (cartScreen) {
+        cartScreen.classList.remove('open');
+        cartScreen.setAttribute('aria-hidden', 'true');
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }, 3000);
+})();
