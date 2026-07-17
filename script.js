@@ -1,6 +1,7 @@
 const cart = [];
 const homeScreen = document.getElementById('home-screen');
 const cartScreen = document.getElementById('cart-screen');
+const paymentScreen = document.getElementById('payment-screen');
 const trackingScreen = document.getElementById('tracking-screen');
 const cartToggle = document.getElementById('cart-toggle');
 const cartCount = document.getElementById('cart-count');
@@ -22,11 +23,17 @@ const deliveryComment = document.getElementById('delivery-comment');
 const submitReviewButton = document.getElementById('submit-review-btn');
 const backHomeButton = document.getElementById('back-home-btn');
 const confettiLayer = document.getElementById('confetti-layer');
+const cameraFeed = document.getElementById('camera-feed');
+const scannerContainer = document.querySelector('.scanner-container');
+const paymentSuccess = document.getElementById('payment-success');
+const paymentSuccessText = paymentSuccess.querySelector('h3');
 const reviewStateKey = 'us-eats-review-prompt';
 const reviewDelayMs = 120000;
 let trackingTimer = null;
 let reviewTimer = null;
 let selectedRating = 0;
+let activeStream = null;
+let paymentTransitionTimer = null;
 
 const vibrate = (pattern) => {
   if (navigator.vibrate) {
@@ -104,23 +111,47 @@ function playTrackingTimeline() {
   activateNextNode();
 }
 
+function stopCameraStream() {
+  if (activeStream) {
+    activeStream.getTracks().forEach((track) => track.stop());
+    activeStream = null;
+  }
+  if (cameraFeed) {
+    cameraFeed.pause();
+    cameraFeed.srcObject = null;
+  }
+}
+
 function resetApp() {
   cart.length = 0;
   updateCartUI();
   clearTimeout(trackingTimer);
   clearTimeout(reviewTimer);
+  clearTimeout(paymentTransitionTimer);
+  stopCameraStream();
   timelineNodes.forEach((node) => node.classList.remove('active'));
   trackingScreen.classList.remove('active');
   trackingScreen.setAttribute('aria-hidden', 'true');
+  paymentScreen.classList.remove('active');
+  paymentScreen.setAttribute('aria-hidden', 'true');
   homeScreen.classList.add('active');
   homeScreen.setAttribute('aria-hidden', 'false');
   closeCart();
   hideReviewModal();
+  if (scannerContainer) {
+    scannerContainer.classList.remove('hidden');
+  }
+  if (paymentSuccess) {
+    paymentSuccess.classList.add('hidden');
+  }
   if (specialRequestsInput) {
     specialRequestsInput.value = '';
   }
   if (deliveryComment) {
     deliveryComment.value = '';
+  }
+  if (paymentSuccessText) {
+    paymentSuccessText.textContent = 'Payment Successful. Face Card never declines. 🔥';
   }
   selectedRating = 0;
   stars.forEach((star) => star.classList.remove('active'));
@@ -130,6 +161,66 @@ function resetApp() {
 function hideReviewModal() {
   ratingModal.classList.remove('show');
   ratingModal.setAttribute('aria-hidden', 'true');
+}
+
+function showPaymentSuccess(message) {
+  if (scannerContainer) {
+    scannerContainer.classList.add('hidden');
+  }
+  if (paymentSuccess) {
+    paymentSuccess.classList.remove('hidden');
+  }
+  if (paymentSuccessText) {
+    paymentSuccessText.textContent = message;
+  }
+}
+
+function transitionToTracking() {
+  paymentScreen.classList.remove('active');
+  paymentScreen.setAttribute('aria-hidden', 'true');
+  trackingScreen.classList.add('active');
+  trackingScreen.setAttribute('aria-hidden', 'false');
+  playTrackingTimeline();
+}
+
+function startFaceCardFlow() {
+  if (scannerContainer) {
+    scannerContainer.classList.remove('hidden');
+  }
+  if (paymentSuccess) {
+    paymentSuccess.classList.add('hidden');
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
+    paymentTransitionTimer = setTimeout(() => {
+      transitionToTracking();
+    }, 3000);
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    .then((stream) => {
+      activeStream = stream;
+      if (cameraFeed) {
+        cameraFeed.srcObject = stream;
+        cameraFeed.play().catch(() => {});
+      }
+
+      setTimeout(() => {
+        stopCameraStream();
+        showPaymentSuccess('Payment Successful. Face Card never declines. 🔥');
+        paymentTransitionTimer = setTimeout(() => {
+          transitionToTracking();
+        }, 3000);
+      }, 3500);
+    })
+    .catch(() => {
+      showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
+      paymentTransitionTimer = setTimeout(() => {
+        transitionToTracking();
+      }, 3000);
+    });
 }
 
 function showReviewModal() {
@@ -275,13 +366,15 @@ checkoutForm.addEventListener('submit', (event) => {
     homeScreen.setAttribute('aria-hidden', 'true');
     cartScreen.classList.remove('open');
     cartScreen.setAttribute('aria-hidden', 'true');
-    trackingScreen.classList.add('active');
-    trackingScreen.setAttribute('aria-hidden', 'false');
+    paymentScreen.classList.add('active');
+    paymentScreen.setAttribute('aria-hidden', 'false');
+    trackingScreen.classList.remove('active');
+    trackingScreen.setAttribute('aria-hidden', 'true');
 
     checkoutButton.classList.remove('is-loading');
     checkoutButton.disabled = false;
     checkoutButton.innerHTML = originalText;
 
-    playTrackingTimeline();
+    startFaceCardFlow();
   }, 1000);
 });
