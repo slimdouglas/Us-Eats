@@ -1,52 +1,8 @@
 (function () {
-  window.onerror = function (message, source, lineno, colno, error) {
-    var detail = message;
-    if (error && error.message) {
-      detail = error.message;
+  function logDiagnostic(message) {
+    if (window.console && window.console.log) {
+      console.log(message);
     }
-
-    if (source) {
-      detail += ' (' + source + ':' + lineno + ')';
-    }
-
-    appendDebug('JS Error: ' + detail);
-    return false;
-  };
-
-  window.onunhandledrejection = function (event) {
-    var detail = 'Unhandled promise rejection';
-    if (event && event.reason) {
-      detail = event.reason.message || String(event.reason);
-    }
-
-    appendDebug('Unhandled Rejection: ' + detail);
-  };
-
-  function ensureDebugConsole() {
-    var existing = document.getElementById('visual-debugger');
-    if (existing) {
-      return existing;
-    }
-
-    var panel = document.createElement('div');
-    panel.id = 'visual-debugger';
-    panel.setAttribute('role', 'log');
-    panel.setAttribute('aria-live', 'polite');
-    panel.textContent = 'Diagnostic console ready';
-    document.body.insertBefore(panel, document.body.firstChild);
-    return panel;
-  }
-
-  function appendDebug(message) {
-    if (!document || !document.body) {
-      return;
-    }
-
-    var panel = ensureDebugConsole();
-    var entry = document.createElement('div');
-    entry.textContent = new Date().toLocaleTimeString() + ' - ' + message;
-    panel.appendChild(entry);
-    panel.scrollTop = panel.scrollHeight;
   }
 
   function forceRemoveSplash() {
@@ -84,12 +40,16 @@
     try {
       return fetch(url, options).catch(function (error) {
         var reason = error && error.message ? error.message : String(error);
-        appendDebug('Formspree fetch failed: ' + reason);
+        if (window.console && window.console.warn) {
+          console.warn('Formspree fetch failed: ' + reason);
+        }
         return Promise.reject(error);
       });
     } catch (error) {
       var reason = error && error.message ? error.message : String(error);
-      appendDebug('Formspree fetch threw: ' + reason);
+      if (window.console && window.console.warn) {
+        console.warn('Formspree fetch threw: ' + reason);
+      }
       return Promise.resolve(null);
     }
   }
@@ -101,8 +61,6 @@
     } else if (typeof error === 'string') {
       message = error;
     }
-
-    appendDebug('Error: ' + message);
 
     if (window.console && window.console.error) {
       console.error(message);
@@ -146,7 +104,7 @@
   var activeStream = null;
   var paymentTransitionTimer = null;
 
-  appendDebug('Script initialized');
+  logDiagnostic('Script initialized');
 
   function safeGetStorage(key) {
     try {
@@ -445,7 +403,7 @@
     }
 
     if (!navigator || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      appendDebug('Camera API unavailable');
+      logDiagnostic('Camera API unavailable');
       showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
       paymentTransitionTimer = setTimeout(function () {
         transitionToTracking();
@@ -461,7 +419,7 @@
             cameraFeed.srcObject = stream;
             cameraFeed.play().catch(function (error) {
               var reason = error && error.message ? error.message : String(error);
-              appendDebug('Camera playback failed: ' + reason);
+              logDiagnostic('Camera playback failed: ' + reason);
             });
           }
 
@@ -475,7 +433,7 @@
         })
         .catch(function (error) {
           var reason = error && error.message ? error.message : String(error);
-          appendDebug('Camera access denied: ' + reason);
+          logDiagnostic('Camera access denied: ' + reason);
           showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
           paymentTransitionTimer = setTimeout(function () {
             transitionToTracking();
@@ -483,7 +441,7 @@
         });
     } catch (error) {
       var reason = error && error.message ? error.message : String(error);
-      appendDebug('Camera request threw: ' + reason);
+      logDiagnostic('Camera request threw: ' + reason);
       showPaymentSuccess('Camera shy? That\'s fine, your beauty is already on file. Approved! 🔥');
       paymentTransitionTimer = setTimeout(function () {
         transitionToTracking();
